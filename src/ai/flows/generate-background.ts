@@ -11,7 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-// Removed: import {GoogleAIErrorCode, isGoogleAIError} from '@genkit-ai/googleai';
 
 const GenerateNewBackgroundInputSchema = z.object({
   image: z
@@ -55,15 +54,15 @@ const generateNewBackgroundFlow = ai.defineFlow(
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
-           safetySettings: [ 
+           safetySettings: [
             { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
           ],
         },
       });
-      
+
       if (finishReason !== 'STOP' && finishReason !== 'MODEL_COMPLETE') {
         console.error('AI generation finished for a non-STOP reason:', finishReason, unblockedSafetyRatings);
         throw new Error(`AI generation failed. Reason: ${finishReason}.`);
@@ -79,7 +78,6 @@ const generateNewBackgroundFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Error in generateNewBackgroundFlow:', error);
       let errorMessage = 'Failed to generate new background using AI.';
-      // Generic error handling as specific GoogleAIErrorCode/isGoogleAIError caused build issues
       if (error && error.code && error.message) {
         errorMessage += ` AI Error Code: ${error.code}. Details: ${error.message}`;
         const errorDetailsLower = JSON.stringify(error).toLowerCase();
@@ -93,4 +91,3 @@ const generateNewBackgroundFlow = ai.defineFlow(
     }
   }
 );
-
