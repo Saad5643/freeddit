@@ -51,7 +51,7 @@ export default function ImageProcessor() {
       try {
         const result = await generateNewBackground({
           image: dataUrl,
-          prompt: "Identify and extract the main subject from this image."
+          prompt: "Extract the main subject from this image."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });

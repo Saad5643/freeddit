@@ -18,14 +18,14 @@ const GenerateNewBackgroundInputSchema = z.object({
     .describe(
       "The input image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  prompt: z.string().describe('The text prompt describing the desired background or action.'),
+  prompt: z.string().describe('The text prompt describing the desired action on the image.'),
 });
 export type GenerateNewBackgroundInput = z.infer<typeof GenerateNewBackgroundInputSchema>;
 
 const GenerateNewBackgroundOutputSchema = z.object({
   newImage: z
     .string()
-    .describe('The image with the new background, as a data URI.'),
+    .describe('The processed image, as a data URI.'),
 });
 export type GenerateNewBackgroundOutput = z.infer<typeof GenerateNewBackgroundOutputSchema>;
 
@@ -43,7 +43,7 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     try {
-      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your primary goal is to isolate the main subject from the provided image and place it on a 100% transparent background. The output MUST be a PNG image with a full alpha channel for transparency. Do NOT add any new background elements, colors, or patterns. The area outside the main subject must be purely transparent. Do not add any watermarks or other artifacts.";
+      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to isolate the main subject from the provided image. The output MUST be a PNG image. The background of this PNG, meaning all areas NOT part of the main subject, MUST be 100% transparent using a full alpha channel. It is CRITICAL that this background is NOT white, NOT any solid color, and NOT any pattern. Only the main subject should be visible, with true transparency elsewhere. Do not add watermarks or other artifacts.";
       const combinedPrompt = `${systemInstruction}\n\nUSER REQUEST: ${input.prompt}`;
 
       const {media, finishReason, unblockedSafetyRatings} = await ai.generate({
@@ -70,8 +70,8 @@ const generateNewBackgroundFlow = ai.defineFlow(
       }
 
       if (!media?.url) {
-        console.error('AI did not return an image URL. Finish reason:', finishReason);
-        throw new Error('AI did not return an image with a valid URL.');
+        console.error('AI did not return an image URL. Finish reason:', finishReason, unblockedSafetyRatings);
+        throw new Error('AI did not return an image with a valid URL. Finish reason: ' + finishReason);
       }
 
       return { newImage: media.url };
