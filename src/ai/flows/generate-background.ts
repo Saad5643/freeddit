@@ -18,7 +18,7 @@ const GenerateNewBackgroundInputSchema = z.object({
     .describe(
       "The input image as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
-  prompt: z.string().describe('The text prompt describing the desired background.'),
+  prompt: z.string().describe('The text prompt describing the desired background or action.'),
 });
 export type GenerateNewBackgroundInput = z.infer<typeof GenerateNewBackgroundInputSchema>;
 
@@ -43,13 +43,14 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     const {media} = await ai.generate({
-      model: 'googleai/gemini-2.0-flash-exp', // Explicitly use the image-generation capable model
+      model: 'googleai/gemini-2.0-flash-exp',
       prompt: [
-        {media: {url: input.image}}, // Use input.image from the flow's input
-        {text: input.prompt}         // Use input.prompt from the flow's input
+        {media: {url: input.image}},
+        {text: "You are an expert image editing AI. Your primary task is to process the provided image. If the request involves background removal or making the background transparent, you must ensure the output is a PNG image with a full alpha channel for true transparency. Do not render patterns like checkerboards into the background."},
+        {text: `User's specific instruction: ${input.prompt}`}
       ],
       config: {
-        responseModalities: ['TEXT', 'IMAGE'], // Crucial for getting image output
+        responseModalities: ['TEXT', 'IMAGE'],
       },
     });
 
