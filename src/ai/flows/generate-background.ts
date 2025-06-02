@@ -43,7 +43,7 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     try {
-      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to isolate the main subject from the provided image. The output MUST be a PNG image. The background of this PNG, meaning all areas NOT part of the main subject, MUST be 100% transparent using a full alpha channel. It is CRITICAL that this background is NOT white, NOT any solid color, and NOT any pattern. Only the main subject should be visible, with true transparency elsewhere. Do not add watermarks or other artifacts.";
+      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to isolate the main subject from the provided image and place it on a solid white background. The output MUST be a standard image format (e.g., PNG or JPG). Ensure the background is entirely white and opaque. Do not add watermarks or other artifacts.";
       const combinedPrompt = `${systemInstruction}\n\nUSER REQUEST: ${input.prompt}`;
 
       const {media, finishReason, unblockedSafetyRatings} = await ai.generate({
@@ -79,7 +79,7 @@ const generateNewBackgroundFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Error in generateNewBackgroundFlow:', error);
       let errorMessage = 'Failed to generate new background using AI.';
-      if (error && error.message) { 
+      if (error && error.message) {
         errorMessage += ` Details: ${error.message}`;
         const errorDetailsLower = JSON.stringify(error).toLowerCase();
          if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked'))) {

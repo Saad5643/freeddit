@@ -28,12 +28,6 @@ export default function ImageProcessor() {
       toast({ title: "Invalid File", description: "Please upload an image file (e.g., PNG, JPG).", variant: "destructive" });
       return false;
     }
-    // Add size validation if needed
-    // const maxSize = 5 * 1024 * 1024; // 5MB
-    // if (file.size > maxSize) {
-    //   toast({ title: "File Too Large", description: "Please upload an image smaller than 5MB.", variant: "destructive" });
-    //   return false;
-    // }
     return true;
   };
 
@@ -51,7 +45,7 @@ export default function ImageProcessor() {
       try {
         const result = await generateNewBackground({
           image: dataUrl,
-          prompt: "Extract the main subject from this image."
+          prompt: "Place the main subject on a solid white background."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });
@@ -105,7 +99,7 @@ export default function ImageProcessor() {
       const link = document.createElement('a');
       link.href = processedImage;
       const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-      link.download = `${nameWithoutExtension}_transparent.png`;
+      link.download = `${nameWithoutExtension}_white_bg.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -119,7 +113,7 @@ export default function ImageProcessor() {
     setError(null);
     setFileName(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Reset file input
+      fileInputRef.current.value = ""; 
     }
   };
 
@@ -128,7 +122,7 @@ export default function ImageProcessor() {
       <CardHeader>
         <CardTitle className="text-center text-2xl font-headline">Upload Your Image</CardTitle>
         <CardDescription className="text-center">
-          Drag &amp; drop an image or click to select a file.
+          Drag &amp; drop an image or click to select a file. The background will be made white.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -159,7 +153,7 @@ export default function ImageProcessor() {
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
             <Loader2 className="w-16 h-16 text-primary animate-spin" />
             <p className="text-lg font-medium text-foreground">Processing background...</p>
-            <Progress value={50} className="w-full animate-pulse" /> {/* Indeterminate progress illusion */}
+            <Progress value={50} className="w-full animate-pulse" />
             <p className="text-sm text-muted-foreground">This may take a few seconds.</p>
           </div>
         )}
@@ -184,11 +178,12 @@ export default function ImageProcessor() {
             {processedImage && (
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-center">Processed</h3>
-                <CheckeredBackground className="aspect-square w-full">
-                  <Image src={processedImage} alt="Processed image with transparent background" width={400} height={400} className="object-contain w-full h-full" />
-                </CheckeredBackground>
+                 {/* Displaying with a normal background, not checkered, as it's now a white background */}
+                <div className="aspect-square w-full rounded-md overflow-hidden border bg-white">
+                  <Image src={processedImage} alt="Processed image with white background" width={400} height={400} className="object-contain w-full h-full" />
+                </div>
                 <Button onClick={handleDownload} className="w-full mt-2" disabled={!processedImage}>
-                  <Download className="mr-2 h-4 w-4" /> Download PNG
+                  <Download className="mr-2 h-4 w-4" /> Download Image
                 </Button>
               </div>
             )}
