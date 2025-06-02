@@ -21,7 +21,7 @@ const features = [
 
 export default function FeaturesSection() {
   return (
-    <section className="w-full py-16 md:py-24 bg-secondary/50">
+    <section className="w-full py-16 md:py-24 bg-[hsl(var(--card))]">
       <div className="container mx-auto px-4 md:px-6">
         <div className="text-center mb-12 md:mb-16 animate-in fade-in-0 slide-in-from-bottom-12 duration-700 ease-out">
           <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight">Amazing Features</h2>
@@ -36,7 +36,7 @@ export default function FeaturesSection() {
               className="animate-in fade-in-0 slide-in-from-bottom-12 duration-700 ease-out"
               style={{ animationDelay: `${index * 150}ms` }}
             >
-              <Card className="h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
+              <Card className="h-full shadow-lg hover:shadow-xl transition-shadow duration-300 bg-[hsl(var(--background))]">
                 <CardHeader className="flex flex-row items-center gap-4">
                   {feature.icon}
                   <CardTitle className="font-headline text-xl">{feature.title}</CardTitle>
