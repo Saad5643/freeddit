@@ -36,31 +36,31 @@ export async function generateNewBackground(
   return generateNewBackgroundFlow(input);
 }
 
-const generateNewBackgroundPrompt = ai.definePrompt({
-  name: 'generateNewBackgroundPrompt',
-  input: {schema: GenerateNewBackgroundInputSchema},
-  output: {schema: GenerateNewBackgroundOutputSchema},
-  prompt: [
-    {media: {url: '{{{image}}}'}},
-    {text: 'Remove the background from the provided image, making it transparent. Ensure the subject is preserved and has sharp, clean edges.'},
-  ],
-  config: {
-    responseModalities: ['TEXT', 'IMAGE'],
-  },
-});
-
 const generateNewBackgroundFlow = ai.defineFlow(
   {
     name: 'generateNewBackgroundFlow',
     inputSchema: GenerateNewBackgroundInputSchema,
     outputSchema: GenerateNewBackgroundOutputSchema,
   },
-  async input => {
-    const {media} = await generateNewBackgroundPrompt(input);
+  async (input: GenerateNewBackgroundInput) => {
+    const {media} = await ai.generate({
+      model: 'googleai/gemini-2.0-flash-exp', // Explicitly use the image-generation capable model
+      prompt: [
+        {media: {url: input.image}}, // Use input.image from the flow's input
+        {text: input.prompt}         // Use input.prompt from the flow's input
+      ],
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'], // Crucial for getting image output
+      },
+    });
+
+    if (!media?.url) {
+      console.error('AI response missing media URL:', media);
+      throw new Error('AI did not return an image. The media URL is missing.');
+    }
 
     return {
-      newImage: media.url!,
+      newImage: media.url,
     };
   }
 );
-
