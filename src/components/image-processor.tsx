@@ -49,9 +49,9 @@ export default function ImageProcessor() {
       setError(null);
       setIsLoading(true);
       try {
-        const result = await generateNewBackground({ 
-          image: dataUrl, 
-          prompt: "Create a PNG image of the main subject from the input image, with a truly transparent background using an alpha channel."
+        const result = await generateNewBackground({
+          image: dataUrl,
+          prompt: "remove background"
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });
