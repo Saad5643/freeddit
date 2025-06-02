@@ -49,9 +49,10 @@ export default function ImageProcessor() {
       setError(null);
       setIsLoading(true);
       try {
+        // Updated prompt for clarity
         const result = await generateNewBackground({
           image: dataUrl,
-          prompt: "remove background"
+          prompt: "Isolate the main subject in this image. Make the entire original background completely transparent (alpha channel). Do not add any new background; the output should only be the subject on a 100% transparent layer. Ensure the output is a PNG image with this alpha transparency."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });
