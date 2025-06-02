@@ -48,10 +48,9 @@ export default function ImageProcessor() {
       setError(null);
       setIsLoading(true);
       try {
-        // Updated prompt for better transparency
         const result = await generateNewBackground({ 
           image: dataUrl, 
-          prompt: "Completely remove the background of this image, making it fully transparent. Ensure the subject's edges are clean and the entire background is 100% transparent with no black or opaque areas remaining." 
+          prompt: "Isolate the main subject from the background in the provided image. Make the background entirely transparent. Output the image with the subject on a transparent background."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background removed successfully." });
