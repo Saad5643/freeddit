@@ -967,7 +967,7 @@ function SplashCursor({
       if (colorUpdateTimer >= 1) {
         colorUpdateTimer = wrap(colorUpdateTimer, 0, 1);
         pointers.forEach((p) => {
-          p.color = generateColor();
+          p.color = generateColorArray();
         });
       }
     }
@@ -1143,16 +1143,16 @@ function SplashCursor({
     }
 
     function clickSplat(pointer: Pointer) {
-      const color = generateColor();
-      // color.r *= 10.0; // This can make colors too bright quickly
-      // color.g *= 10.0;
-      // color.b *= 10.0;
-      let dx = 100 * (Math.random() - 0.5); // Increased for more visible initial splat
-      let dy = 100 * (Math.random() - 0.5); // Increased for more visible initial splat
-      splat(pointer.texcoordX, pointer.texcoordY, dx, dy, color);
+      const color = generateColorArray(); // Use array version
+      // No need to multiply components by 10 if generateColorArray returns scaled values.
+      // For a more noticeable click splat with current generateColorArray, we might make it brighter.
+      // Example: const brighterColor = color.map(c => Math.min(c * 5, 1)) as [number, number, number];
+      let dx = 100 * (Math.random() - 0.5);
+      let dy = 100 * (Math.random() - 0.5);
+      splat(pointer.texcoordX, pointer.texcoordY, dx, dy, color); // Pass the array
     }
 
-    function splat(x: number, y: number, dx: number, dy: number, color: [number, number, number] | {r:number, g:number, b:number}) {
+    function splat(x: number, y: number, dx: number, dy: number, colorInput: [number, number, number] | {r:number, g:number, b:number}) {
       if (!velocity || !dye) return;
       splatProgram.bind();
       gl.uniform1i(splatProgram.uniforms.uTarget as WebGLUniformLocation, velocity.read.attach(0));
@@ -1170,7 +1170,7 @@ function SplashCursor({
       velocity.swap();
 
       gl.uniform1i(splatProgram.uniforms.uTarget as WebGLUniformLocation, dye.read.attach(0));
-      const c = Array.isArray(color) ? {r: color[0], g: color[1], b: color[2]} : color;
+      const c = Array.isArray(colorInput) ? {r: colorInput[0], g: colorInput[1], b: colorInput[2]} : colorInput;
       gl.uniform3f(splatProgram.uniforms.color as WebGLUniformLocation, c.r, c.g, c.b);
       blit(dye.write);
       dye.swap();
@@ -1223,16 +1223,9 @@ function SplashCursor({
     }
     
     function generateColorArray(): [number,number,number] {
-        let c = HSVtoRGB(Math.random(), 1.0, 1.0);
-        // For a black/grey theme, we might want greyscale colors, or desaturated ones.
-        // Let's try desaturated random colors for now.
+        // For a black/grey theme, produce desaturated random colors.
         const randomGrey = Math.random() * 0.2 + 0.05; // Darker greys
         return [randomGrey, randomGrey, randomGrey];
-        // Original color generation:
-        // c.r *= 0.15;
-        // c.g *= 0.15;
-        // c.b *= 0.15;
-        // return [c.r, c.g, c.b];
     }
 
     function HSVtoRGB(h: number, s: number, v: number) {
@@ -1347,12 +1340,12 @@ function SplashCursor({
     };
 
     window.addEventListener("mousedown", handleMouseDown);
-    document.body.addEventListener("mousemove", handleFirstMouseMove, { once: true }); // Use once for first move
+    document.body.addEventListener("mousemove", handleFirstMouseMove, { once: true }); 
     window.addEventListener("mousemove", handleMouseMove);
     
     document.body.addEventListener("touchstart", handleTouchStart, { once: true });
-    window.addEventListener("touchstart", (e: TouchEvent) => { // Additional listener if first was removed
-        if(firstMove) return; // if firstMove is still true, the once listener didn't fire
+    window.addEventListener("touchstart", (e: TouchEvent) => { 
+        if(firstMove) return; 
         const touches = e.targetTouches;
         let pointer = pointers[0];
         for (let i = 0; i < touches.length; i++) {
@@ -1370,19 +1363,12 @@ function SplashCursor({
     // Cleanup
     return () => {
         window.removeEventListener("mousedown", handleMouseDown);
-        // handleFirstMouseMove is auto-removed with {once: true}
         window.removeEventListener("mousemove", handleMouseMove);
-        // handleFirstTouchStart is auto-removed with {once: true}
-        window.removeEventListener("touchstart", handleTouchStart); // This might be redundant if {once:true} is reliable
+        window.removeEventListener("touchstart", handleTouchStart);
         window.removeEventListener("touchmove", handleTouchMove);
         window.removeEventListener("touchend", handleTouchEnd);
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
-        }
-        if (gl) {
-            // TODO: Add comprehensive WebGL resource cleanup (buffers, textures, programs, FBOs)
-            // This is non-trivial and requires tracking all created resources.
-            // For a demo, this might be acceptable, but for production, it's important.
         }
     };
 
