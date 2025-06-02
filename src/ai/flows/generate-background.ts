@@ -63,7 +63,8 @@ const generateNewBackgroundFlow = ai.defineFlow(
         },
       });
 
-      if (finishReason !== 'STOP' && finishReason !== 'MODEL_COMPLETE') {
+      const finishReasonUpper = finishReason?.toString().toUpperCase();
+      if (finishReasonUpper !== 'STOP' && finishReasonUpper !== 'MODEL_COMPLETE' && finishReasonUpper !== 'FINISH_REASON_STOP') {
         console.error('AI generation finished for a non-STOP reason:', finishReason, unblockedSafetyRatings);
         throw new Error(`AI generation failed. Reason: ${finishReason}.`);
       }
@@ -78,14 +79,14 @@ const generateNewBackgroundFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Error in generateNewBackgroundFlow:', error);
       let errorMessage = 'Failed to generate new background using AI.';
-      if (error && error.code && error.message) {
-        errorMessage += ` AI Error Code: ${error.code}. Details: ${error.message}`;
+      if (error && error.message) { // Simplified error message construction
+        errorMessage += ` Details: ${error.message}`;
         const errorDetailsLower = JSON.stringify(error).toLowerCase();
-        if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked'))) {
+         if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked'))) {
           errorMessage += ' The request may have been blocked by safety filters.';
         }
-      } else if (error.message) {
-        errorMessage += ` Details: ${error.message}`;
+      } else {
+        errorMessage += ' An unknown error occurred during AI processing.'
       }
       throw new Error(errorMessage);
     }
