@@ -49,11 +49,9 @@ export default function ImageProcessor() {
       setError(null);
       setIsLoading(true);
       try {
-        // Simplified prompt focusing on subject identification.
-        // The flow itself will enforce transparency requirements.
         const result = await generateNewBackground({
           image: dataUrl,
-          prompt: "Identify the main subject in the image and extract it for background removal."
+          prompt: "Identify and extract the main subject from this image."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });

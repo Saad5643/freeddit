@@ -79,7 +79,7 @@ const generateNewBackgroundFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Error in generateNewBackgroundFlow:', error);
       let errorMessage = 'Failed to generate new background using AI.';
-      if (error && error.message) { // Simplified error message construction
+      if (error && error.message) { 
         errorMessage += ` Details: ${error.message}`;
         const errorDetailsLower = JSON.stringify(error).toLowerCase();
          if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked'))) {
