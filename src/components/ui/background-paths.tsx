@@ -33,7 +33,7 @@ export function FloatingPaths({ position }: { position: number }) {
                         d={path.d}
                         stroke="currentColor"
                         strokeWidth={path.width}
-                        strokeOpacity={0.1 + path.id * 0.03}
+                        strokeOpacity={Math.min(1.0, 0.15 + path.id * 0.025)} // Increased base opacity
                         initial={{ pathLength: 0.3, opacity: 0.6 }}
                         animate={{
                             pathLength: 1,

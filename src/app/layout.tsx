@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FloatingPaths } from '@/components/ui/background-paths';
+import { SplashCursorDemo } from '@/components/splash-cursor-demo';
 
 export const metadata: Metadata = {
   title: 'Background Be Gone',
@@ -30,6 +31,7 @@ export default function RootLayout({
           {children}
         </div>
         <Toaster />
+        <SplashCursorDemo />
       </body>
     </html>
   );
