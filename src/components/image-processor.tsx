@@ -195,29 +195,6 @@ export default function ImageProcessor() {
           </Button>
         )}
 
-        {!originalImage && !isLoading && (
-          <div className="text-center mt-6">
-            <p className="text-muted-foreground mb-2">Don't have an image? Try this example:</p>
-            <Image
-              src="https://placehold.co/600x400.png"
-              alt="Example image placeholder"
-              width={200}
-              height={133}
-              data-ai-hint="person portrait"
-              className="rounded-md mx-auto border shadow-sm"
-            />
-             <Button
-              variant="link"
-              className="mt-1"
-              onClick={() => {
-                toast({title: "Example", description: "Click 'Upload Your Image' and select your own file."});
-              }}
-            >
-              (Example Image)
-            </Button>
-          </div>
-        )}
-
       </CardContent>
     </Card>
   );

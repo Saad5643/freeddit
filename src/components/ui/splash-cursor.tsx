@@ -67,19 +67,19 @@ interface DoubleFBO {
 
 function SplashCursor({
   SIM_RESOLUTION = 128,
-  DYE_RESOLUTION = 1024,
-  CAPTURE_RESOLUTION = 512,
-  DENSITY_DISSIPATION = 1.5, // Lasts longer
-  VELOCITY_DISSIPATION = 0.8, // Lasts longer
-  PRESSURE = 0.1,
-  PRESSURE_ITERATIONS = 20,
-  CURL = 5, // Slightly more curl
-  SPLAT_RADIUS = 0.3, // Bigger splashes
-  SPLAT_FORCE = 7000, // Stronger splashes
-  SHADING = true,
-  COLOR_UPDATE_SPEED = 10,
-  BACK_COLOR = { r: 0.05, g: 0.05, b: 0.05 },
-  TRANSPARENT = true,
+  DYE_RESOLUTION = 1024, // Kept default
+  CAPTURE_RESOLUTION = 512, // Kept default
+  DENSITY_DISSIPATION = 1.0, // Fluid lasts a bit longer
+  VELOCITY_DISSIPATION = 0.5, // Velocity effect lasts a bit longer
+  PRESSURE = 0.1, // Kept default
+  PRESSURE_ITERATIONS = 20, // Kept default
+  CURL = 10, // Slightly more curl for visibility
+  SPLAT_RADIUS = 0.35, // Slightly larger splashes
+  SPLAT_FORCE = 7000, // Slightly stronger splashes
+  SHADING = true, // Kept default
+  COLOR_UPDATE_SPEED = 10, // Kept default
+  BACK_COLOR = { r: 0.02, g: 0.02, b: 0.02 }, // Very dark grey, almost black
+  TRANSPARENT = true, // Kept default
 }: {
   SIM_RESOLUTION?: number;
   DYE_RESOLUTION?: number;
@@ -144,7 +144,7 @@ function SplashCursor({
     const { gl, ext } = glContextResult;
 
     if (ext && !ext.supportLinearFiltering) {
-      config.DYE_RESOLUTION = 256;
+      config.DYE_RESOLUTION = 256; // Fallback for no linear filtering
       config.SHADING = false;
     }
 
@@ -1221,7 +1221,7 @@ function SplashCursor({
     }
     
     function generateColorArray(): [number,number,number] {
-        const randomVal = Math.random() * 0.6 + 0.4; // Brighter greys (0.4 to 1.0)
+        const randomVal = Math.random() * 0.4 + 0.6; // Brighter greys, leaning towards white (0.6 to 1.0)
         return [randomVal, randomVal, randomVal];
     }
 
@@ -1276,8 +1276,18 @@ function SplashCursor({
     }
     
     let firstMove = true;
+    let animationLoopRunning = false;
+
+    const startAnimationLoop = () => {
+        if (!animationLoopRunning) {
+            animationLoopRunning = true;
+            updateFrame();
+        }
+    };
+
 
     const handleMouseDown = (e: MouseEvent) => {
+      startAnimationLoop();
       let pointer = pointers[0];
       let posX = scaleByPixelRatio(e.clientX);
       let posY = scaleByPixelRatio(e.clientY);
@@ -1286,18 +1296,19 @@ function SplashCursor({
     };
 
     const handleFirstMouseMove = (e: MouseEvent) => {
-        if (firstMove) {
-            updateFrame(); 
-            firstMove = false;
-        }
+        startAnimationLoop();
         let pointer = pointers[0];
         let posX = scaleByPixelRatio(e.clientX);
         let posY = scaleByPixelRatio(e.clientY);
         updatePointerMoveData(pointer, posX, posY, pointer.color); 
+        if (firstMove) {
+            document.body.removeEventListener("mousemove", handleFirstMouseMove);
+            firstMove = false;
+        }
     };
     
     const handleMouseMove = (e: MouseEvent) => {
-        if (firstMove) return; 
+        if (firstMove) return; // Wait for first move to ensure loop is running
         let pointer = pointers[0];
         let posX = scaleByPixelRatio(e.clientX);
         let posY = scaleByPixelRatio(e.clientY);
@@ -1305,10 +1316,7 @@ function SplashCursor({
     };
 
     const handleTouchStart = (e: TouchEvent) => {
-        if (firstMove) {
-             updateFrame(); 
-             firstMove = false;
-        }
+        startAnimationLoop();
         const touches = e.targetTouches;
         let pointer = pointers[0];
         for (let i = 0; i < touches.length; i++) {
@@ -1317,7 +1325,15 @@ function SplashCursor({
             updatePointerDownData(pointer, touches[i].identifier, posX, posY);
             clickSplat(pointer); 
         }
+         if (firstMove && e.type === 'touchstart') {
+             document.body.removeEventListener("touchstart", handleFirstTouchStart);
+             firstMove = false;
+         }
     };
+     const handleFirstTouchStart = (e: TouchEvent) => {
+        handleTouchStart(e); // Call the main handler
+    };
+
 
     const handleTouchMove = (e: TouchEvent) => {
         if (firstMove) return;
@@ -1337,38 +1353,26 @@ function SplashCursor({
     };
 
     window.addEventListener("mousedown", handleMouseDown);
-    document.body.addEventListener("mousemove", handleFirstMouseMove, { once: true }); 
+    document.body.addEventListener("mousemove", handleFirstMouseMove); 
     window.addEventListener("mousemove", handleMouseMove);
     
-    document.body.addEventListener("touchstart", handleTouchStart, { once: true });
-    window.addEventListener("touchstart", (e: TouchEvent) => { 
-        if(firstMove) return; 
-        const touches = e.targetTouches;
-        let pointer = pointers[0];
-        for (let i = 0; i < touches.length; i++) {
-          let posX = scaleByPixelRatio(touches[i].clientX);
-          let posY = scaleByPixelRatio(touches[i].clientY);
-          updatePointerDownData(pointer, touches[i].identifier, posX, posY);
-          clickSplat(pointer);
-        }
-    });
-
-
+    document.body.addEventListener("touchstart", handleFirstTouchStart);
     window.addEventListener("touchmove", handleTouchMove, false);
     window.addEventListener("touchend", handleTouchEnd);
     
     // Cleanup
     return () => {
         window.removeEventListener("mousedown", handleMouseDown);
-        document.body.removeEventListener("mousemove", handleFirstMouseMove); // Ensure this specific listener is removed if it wasn't triggered
+        document.body.removeEventListener("mousemove", handleFirstMouseMove); 
         window.removeEventListener("mousemove", handleMouseMove);
-        document.body.removeEventListener("touchstart", handleTouchStart); // Ensure this specific listener is removed
-        window.removeEventListener("touchstart", handleTouchStart);
+        document.body.removeEventListener("touchstart", handleFirstTouchStart);
         window.removeEventListener("touchmove", handleTouchMove);
         window.removeEventListener("touchend", handleTouchEnd);
         if (animationFrameIdRef.current) {
             cancelAnimationFrame(animationFrameIdRef.current);
         }
+        animationLoopRunning = false; // Reset flag on cleanup
+        firstMove = true; // Reset flag
     };
 
   }, [
@@ -1389,10 +1393,11 @@ function SplashCursor({
   ]);
 
   return (
-    <div className="fixed top-0 left-0 z-[9999] pointer-events-none mix-blend-screen">
+    <div className="fixed top-0 left-0 z-[-10] pointer-events-none mix-blend-screen">
       <canvas ref={canvasRef} id="fluid" className="w-screen h-screen" />
     </div>
   );
 }
 
 export { SplashCursor };
+
