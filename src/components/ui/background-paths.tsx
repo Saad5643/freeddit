@@ -14,14 +14,14 @@ export function FloatingPaths({ position }: { position: number }) {
         } ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${
             684 - i * 5 * position
         } ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
-        color: `rgba(15,23,42,${0.1 + i * 0.03})`, // This color is not directly used for stroke if stroke="currentColor"
+        // color: `rgba(15,23,42,${0.1 + i * 0.03})`, // This color is not directly used for stroke if stroke="currentColor"
         width: 0.5 + i * 0.03,
     }));
 
     return (
         <div className="absolute inset-0 pointer-events-none">
             <svg
-                className="w-full h-full text-slate-950 dark:text-white"
+                className="w-full h-full text-white" // For dark theme, currentColor will be white
                 viewBox="0 0 696 316"
                 fill="none"
                 preserveAspectRatio="xMidYMid slice"
@@ -33,11 +33,11 @@ export function FloatingPaths({ position }: { position: number }) {
                         d={path.d}
                         stroke="currentColor"
                         strokeWidth={path.width}
-                        strokeOpacity={Math.min(1.0, 0.15 + path.id * 0.025)} // Increased base opacity
-                        initial={{ pathLength: 0.3, opacity: 0.6 }}
+                        strokeOpacity={Math.min(1.0, 0.4 + path.id * 0.015)} // Increased base opacity
+                        initial={{ pathLength: 0.3, opacity: 0.7 }} // Higher initial opacity
                         animate={{
                             pathLength: 1,
-                            opacity: [0.3, 0.6, 0.3],
+                            opacity: [0.5, 0.8, 0.5], // Make animation opacities higher
                             pathOffset: [0, 1, 0],
                         }}
                         transition={{
@@ -92,8 +92,8 @@ export function BackgroundPaths({
                                             stiffness: 150,
                                             damping: 25,
                                         }}
-                                        className="inline-block text-transparent bg-clip-text 
-                                        bg-gradient-to-r from-neutral-900 to-neutral-700/80 
+                                        className="inline-block text-transparent bg-clip-text
+                                        bg-gradient-to-r from-neutral-900 to-neutral-700/80
                                         dark:from-white dark:to-white/80"
                                     >
                                         {letter}
@@ -104,15 +104,15 @@ export function BackgroundPaths({
                     </h1>
 
                     <div
-                        className="inline-block group relative bg-gradient-to-b from-black/10 to-white/10 
-                        dark:from-white/10 dark:to-black/10 p-px rounded-2xl backdrop-blur-lg 
+                        className="inline-block group relative bg-gradient-to-b from-black/10 to-white/10
+                        dark:from-white/10 dark:to-black/10 p-px rounded-2xl backdrop-blur-lg
                         overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
                     >
                         <Button
                             variant="ghost"
-                            className="rounded-[1.15rem] px-8 py-6 text-lg font-semibold backdrop-blur-md 
-                            bg-white/95 hover:bg-white/100 dark:bg-black/95 dark:hover:bg-black/100 
-                            text-black dark:text-white transition-all duration-300 
+                            className="rounded-[1.15rem] px-8 py-6 text-lg font-semibold backdrop-blur-md
+                            bg-white/95 hover:bg-white/100 dark:bg-black/95 dark:hover:bg-black/100
+                            text-black dark:text-white transition-all duration-300
                             group-hover:-translate-y-0.5 border border-black/10 dark:border-white/10
                             hover:shadow-md dark:hover:shadow-neutral-800/50"
                         >
@@ -120,7 +120,7 @@ export function BackgroundPaths({
                                 Discover Excellence
                             </span>
                             <span
-                                className="ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1.5 
+                                className="ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1.5
                                 transition-all duration-300"
                             >
                                 →
