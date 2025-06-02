@@ -113,12 +113,12 @@ export default function ImageProcessor() {
     setError(null);
     setFileName(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; 
+      fileInputRef.current.value = "";
     }
   };
 
   return (
-    <Card className="w-full max-w-2xl shadow-2xl animate-in fade-in-0 slide-in-from-bottom-12 duration-700 ease-out">
+    <Card className="w-full max-w-2xl mx-auto shadow-2xl animate-in fade-in-0 slide-in-from-bottom-12 duration-700 ease-out">
       <CardHeader>
         <CardTitle className="text-center text-2xl font-headline">Upload Your Image</CardTitle>
         <CardDescription className="text-center">
@@ -178,7 +178,6 @@ export default function ImageProcessor() {
             {processedImage && (
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-center">Processed</h3>
-                 {/* Displaying with a normal background, not checkered, as it's now a white background */}
                 <div className="aspect-square w-full rounded-md overflow-hidden border bg-white">
                   <Image src={processedImage} alt="Processed image with white background" width={400} height={400} className="object-contain w-full h-full" />
                 </div>
@@ -189,26 +188,26 @@ export default function ImageProcessor() {
             )}
           </div>
         )}
-        
+
         {!isLoading && (originalImage || processedImage) && (
           <Button variant="outline" onClick={resetState} className="w-full">
             Upload Another Image
           </Button>
         )}
-        
+
         {!originalImage && !isLoading && (
           <div className="text-center mt-6">
             <p className="text-muted-foreground mb-2">Don't have an image? Try this example:</p>
-            <Image 
-              src="https://placehold.co/600x400.png" 
-              alt="Example image placeholder" 
-              width={200} 
-              height={133} 
+            <Image
+              src="https://placehold.co/600x400.png"
+              alt="Example image placeholder"
+              width={200}
+              height={133}
               data-ai-hint="person portrait"
-              className="rounded-md mx-auto border shadow-sm" 
+              className="rounded-md mx-auto border shadow-sm"
             />
-             <Button 
-              variant="link" 
+             <Button
+              variant="link"
               className="mt-1"
               onClick={() => {
                 toast({title: "Example", description: "Click 'Upload Your Image' and select your own file."});
