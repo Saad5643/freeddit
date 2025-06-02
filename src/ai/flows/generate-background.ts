@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+// Removed: import {GoogleAIErrorCode, isGoogleAIError} from '@genkit-ai/googleai';
 
 const GenerateNewBackgroundInputSchema = z.object({
   image: z
@@ -42,19 +44,33 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     try {
-      const {media} = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-exp', // Explicitly use the image-capable model
+      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your primary goal is to isolate the main subject from the provided image and place it on a 100% transparent background. The output MUST be a PNG image with a full alpha channel for transparency. Do NOT add any new background elements, colors, or patterns. The area outside the main subject must be purely transparent. Do not add any watermarks or other artifacts.";
+      const combinedPrompt = `${systemInstruction}\n\nUSER REQUEST: ${input.prompt}`;
+
+      const {media, finishReason, unblockedSafetyRatings} = await ai.generate({
+        model: 'googleai/gemini-2.0-flash-exp',
         prompt: [
           {media: {url: input.image}},
-          {text: input.prompt},
+          {text: combinedPrompt},
         ],
         config: {
-          responseModalities: ['TEXT', 'IMAGE'], // Ensure image output is expected
+          responseModalities: ['TEXT', 'IMAGE'],
+           safetySettings: [ 
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          ],
         },
       });
+      
+      if (finishReason !== 'STOP' && finishReason !== 'MODEL_COMPLETE') {
+        console.error('AI generation finished for a non-STOP reason:', finishReason, unblockedSafetyRatings);
+        throw new Error(`AI generation failed. Reason: ${finishReason}.`);
+      }
 
       if (!media?.url) {
-        console.error('AI did not return an image URL.');
+        console.error('AI did not return an image URL. Finish reason:', finishReason);
         throw new Error('AI did not return an image with a valid URL.');
       }
 
@@ -63,10 +79,18 @@ const generateNewBackgroundFlow = ai.defineFlow(
     } catch (error: any) {
       console.error('Error in generateNewBackgroundFlow:', error);
       let errorMessage = 'Failed to generate new background using AI.';
-      if (error.message) {
+      // Generic error handling as specific GoogleAIErrorCode/isGoogleAIError caused build issues
+      if (error && error.code && error.message) {
+        errorMessage += ` AI Error Code: ${error.code}. Details: ${error.message}`;
+        const errorDetailsLower = JSON.stringify(error).toLowerCase();
+        if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked'))) {
+          errorMessage += ' The request may have been blocked by safety filters.';
+        }
+      } else if (error.message) {
         errorMessage += ` Details: ${error.message}`;
       }
       throw new Error(errorMessage);
     }
   }
 );
+

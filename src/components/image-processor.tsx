@@ -49,17 +49,19 @@ export default function ImageProcessor() {
       setError(null);
       setIsLoading(true);
       try {
-        // Updated prompt for clarity
+        // Simplified prompt focusing on subject identification.
+        // The flow itself will enforce transparency requirements.
         const result = await generateNewBackground({
           image: dataUrl,
-          prompt: "Isolate the main subject in this image. Make the entire original background completely transparent (alpha channel). Do not add any new background; the output should only be the subject on a 100% transparent layer. Ensure the output is a PNG image with this alpha transparency."
+          prompt: "Identify the main subject in the image and extract it for background removal."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error processing image:", err);
-        setError("Failed to process image. Please try again.");
-        toast({ title: "Processing Error", description: "Could not process background. Please try another image or check your connection.", variant: "destructive" });
+        const displayError = err.message || "Failed to process image. Please try again.";
+        setError(displayError);
+        toast({ title: "Processing Error", description: displayError, variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
@@ -216,8 +218,6 @@ export default function ImageProcessor() {
               variant="link" 
               className="mt-1"
               onClick={() => {
-                // Simulate uploading the placeholder. Requires placeholder to be accessible or preloaded as base64.
-                // For simplicity, this is a visual cue. Actual click could fetch and process.
                 toast({title: "Example", description: "Click 'Upload Your Image' and select your own file."});
               }}
             >
