@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useCallback, type DragEvent } from 'react';
@@ -50,14 +51,14 @@ export default function ImageProcessor() {
       try {
         const result = await generateNewBackground({ 
           image: dataUrl, 
-          prompt: "Isolate the main subject from the background. The background must be 100% transparent, meaning it should have a full alpha channel and no visible colors or patterns like checkerboards. Output a PNG image format showing the subject on this completely transparent background."
+          prompt: "Create a PNG image of the main subject from the input image, with a truly transparent background using an alpha channel."
         });
         setProcessedImage(result.newImage);
-        toast({ title: "Success!", description: "Background removed successfully." });
+        toast({ title: "Success!", description: "Background processed successfully." });
       } catch (err) {
         console.error("Error processing image:", err);
         setError("Failed to process image. Please try again.");
-        toast({ title: "Processing Error", description: "Could not remove background. Please try another image or check your connection.", variant: "destructive" });
+        toast({ title: "Processing Error", description: "Could not process background. Please try another image or check your connection.", variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
@@ -156,7 +157,7 @@ export default function ImageProcessor() {
         {isLoading && (
           <div className="flex flex-col items-center justify-center p-8 space-y-4">
             <Loader2 className="w-16 h-16 text-primary animate-spin" />
-            <p className="text-lg font-medium text-foreground">Removing background...</p>
+            <p className="text-lg font-medium text-foreground">Processing background...</p>
             <Progress value={50} className="w-full animate-pulse" /> {/* Indeterminate progress illusion */}
             <p className="text-sm text-muted-foreground">This may take a few seconds.</p>
           </div>
