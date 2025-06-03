@@ -43,7 +43,7 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     try {
-      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to identify the main subject in the provided image. Once identified, you MUST remove the original background of the image completely. The area where the original background was MUST be made transparent using an alpha channel. The output image format MUST be PNG to support this transparency. Do NOT add a new white background or any other colored background. The final image should consist of the main subject on a fully transparent background (alpha channel only). Do not add watermarks or other artifacts.";
+      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to identify the main subject in the provided image. Once identified, all pixels in the image that are NOT part of this main subject MUST be made fully transparent (alpha value of 0). The output image format MUST be PNG to preserve this alpha channel transparency. Do NOT fill non-subject areas with any color (like white or black); they MUST be transparent. The final image should consist of only the main subject on a fully transparent background. Do not add watermarks or other artifacts.";
       const combinedPrompt = `${systemInstruction}\n\nUSER REQUEST: ${input.prompt}`;
 
       const {media, finishReason, unblockedSafetyRatings} = await ai.generate({
