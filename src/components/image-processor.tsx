@@ -47,66 +47,74 @@ export default function ImageProcessor() {
       toast({ title: "Invalid File", description: "Please upload an image file (e.g., PNG, JPG).", variant: "destructive" });
       return false;
     }
-    // Basic check for file size (e.g., 5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({ title: "File Too Large", description: "Please upload an image smaller than 5MB.", variant: "destructive" });
         return false;
     }
     return true;
   };
 
-  const processFile = useCallback(async (file: File) => {
+  const handleFileSelect = useCallback((file: File) => {
     if (!handleFileValidation(file)) return;
 
     setFileName(file.name);
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setOriginalImage(dataUrl);
-      setProcessedImage(null);
-      setError(null);
-      setIsLoading(true);
-
-      let prompt = "";
-      let processedFileNameSuffix = "_processed";
-
-      if (selectedBackgroundType === 'transparent') {
-        prompt = "Isolate the main subject and make the background fully transparent. The output image format MUST be PNG to preserve the alpha channel transparency. Do not add any color to the background; it should be clear.";
-        processedFileNameSuffix = "_transparent_bg";
-      } else if (selectedBackgroundType === 'circles') {
-        prompt = "Isolate the main subject and place it on a new, visually appealing background featuring a pattern of non-overlapping, medium-sized circles in various main colors (like red, blue, green, yellow, purple). Ensure the subject is clearly visible and the background is distinct. The output image format MUST be PNG.";
-        processedFileNameSuffix = "_circles_bg";
-      } else if (selectedBackgroundType === 'solid') {
-        if (selectedSolidColor) {
-          prompt = `Isolate the main subject and place it on a new, solid ${selectedSolidColor.name.toLowerCase()} background. The output image format MUST be PNG.`;
-          processedFileNameSuffix = `_${selectedSolidColor.value}_bg`;
-        } else {
-          toast({ title: "Color Not Selected", description: "Please select a solid background color.", variant: "destructive" });
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      try {
-        const result = await generateNewBackground({ image: dataUrl, prompt });
-        setProcessedImage(result.newImage);
-        toast({ title: "Success!", description: "Background processed successfully." });
-      } catch (err: any) {
-        console.error("Error processing image:", err);
-        const displayError = err.message || "Failed to process image. Please try again.";
-        setError(displayError);
-        toast({ title: "Processing Error", description: displayError, variant: "destructive" });
-      } finally {
-        setIsLoading(false);
-      }
+      setProcessedImage(null); // Clear previous processed image
+      setError(null); // Clear previous errors
     };
     reader.readAsDataURL(file);
-  }, [toast, selectedBackgroundType, selectedSolidColor]);
+  }, [toast]);
+
+
+  const handleGenerateProcess = useCallback(async () => {
+    if (!originalImage) {
+      toast({ title: "No Image", description: "Please upload an image first.", variant: "destructive" });
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setProcessedImage(null);
+
+    let prompt = "";
+    // processedFileNameSuffix is used for download, can be determined in handleDownload
+
+    if (selectedBackgroundType === 'transparent') {
+      prompt = "Isolate the main subject and make its original background fully transparent. The output image format MUST be PNG to preserve the alpha channel transparency. Do not add any color to the background; it should be clear (alpha zero). Ensure all pixels not belonging to the main subject are transparent.";
+    } else if (selectedBackgroundType === 'circles') {
+      prompt = "Isolate the main subject and place it on a new, visually appealing background featuring a pattern of non-overlapping, medium-sized circles in various main colors (like red, blue, green, yellow, purple). Ensure the subject is clearly visible and the background is distinct. The output image format MUST be PNG.";
+    } else if (selectedBackgroundType === 'solid') {
+      if (selectedSolidColor) {
+        prompt = `Isolate the main subject and place it on a new, solid ${selectedSolidColor.name.toLowerCase()} background. The output image format MUST be PNG.`;
+      } else {
+        toast({ title: "Color Not Selected", description: "Please select a solid background color.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    try {
+      const result = await generateNewBackground({ image: originalImage, prompt });
+      setProcessedImage(result.newImage);
+      toast({ title: "Success!", description: "Background processed successfully." });
+    } catch (err: any) {
+      console.error("Error processing image:", err);
+      const displayError = err.message || "Failed to process image. Please try again.";
+      setError(displayError);
+      toast({ title: "Processing Error", description: displayError, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [originalImage, selectedBackgroundType, selectedSolidColor, toast]);
+
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      processFile(file);
+      handleFileSelect(file);
     }
   };
 
@@ -116,7 +124,7 @@ export default function ImageProcessor() {
     setDragOver(false);
     const file = event.dataTransfer.files?.[0];
     if (file) {
-      processFile(file);
+      handleFileSelect(file);
     }
   };
 
@@ -159,8 +167,10 @@ export default function ImageProcessor() {
     setIsLoading(false);
     setError(null);
     setFileName(null);
-    setSelectedBackgroundType('transparent');
-    setSelectedSolidColor(null);
+    // Keep selectedBackgroundType and selectedSolidColor or reset them?
+    // For now, let's keep them so user doesn't have to reselect if they just change image.
+    // setSelectedBackgroundType('transparent'); 
+    // setSelectedSolidColor(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -171,7 +181,7 @@ export default function ImageProcessor() {
       <CardHeader>
         <CardTitle className="text-center text-2xl font-headline">Upload Your Image</CardTitle>
         <CardDescription className="text-center">
-          Select an image and choose your desired background effect.
+          Select an image, choose your desired background effect, then click Generate.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -182,7 +192,7 @@ export default function ImageProcessor() {
             const newType = value as BackgroundType;
             setSelectedBackgroundType(newType);
             if (newType !== 'solid') {
-              setSelectedSolidColor(null); // Reset solid color if not selected
+              setSelectedSolidColor(null); 
             }
           }}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"
@@ -201,7 +211,6 @@ export default function ImageProcessor() {
           </div>
         </RadioGroup>
 
-        {/* Conditional rendering for solid color options */}
         {selectedBackgroundType === 'solid' && (
           <div className="space-y-2 mb-4 p-4 border rounded-md bg-card">
             <Label htmlFor="solid-color-picker" className="font-medium text-sm text-foreground">Choose Background Color:</Label>
@@ -261,43 +270,62 @@ export default function ImageProcessor() {
         {error && !isLoading && (
           <div className="text-center p-4 bg-destructive/10 border border-destructive rounded-md">
             <p className="text-destructive font-medium">{error}</p>
-            <Button variant="outline" size="sm" onClick={resetState} className="mt-2">Try Again</Button>
+            <Button variant="outline" size="sm" onClick={resetState} className="mt-2">Try Uploading Again</Button>
           </div>
         )}
 
-        {!isLoading && (originalImage || processedImage) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {originalImage && (
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium text-center">Original</h3>
-                <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border">
-                  <Image src={originalImage} alt="Original image" width={400} height={400} className="object-contain w-full h-full" />
-                </CheckeredBackground>
-              </div>
-            )}
-            {processedImage && (
+        {originalImage && !isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div className="space-y-2">
+              <h3 className="text-lg font-medium text-center">Original</h3>
+              <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border">
+                <Image src={originalImage} alt="Original image" width={400} height={400} className="object-contain w-full h-full" />
+              </CheckeredBackground>
+            </div>
+            {processedImage ? (
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-center">Processed</h3>
                  <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border">
-                    <Image src={processedImage} alt="Processed image" width={400} height={400} className="object-contain w-full h-full" />
+                    <Image src={processedImage} alt="Processed image with background modification" width={400} height={400} className="object-contain w-full h-full" />
                  </CheckeredBackground>
-                <Button onClick={handleDownload} className="w-full mt-2" disabled={!processedImage}>
-                  <Download className="mr-2 h-4 w-4" /> Download Image
-                </Button>
               </div>
+            ) : (
+              // Placeholder or message if image uploaded but not processed yet
+              originalImage && !isLoading && !error && (
+                <div className="space-y-2 flex flex-col items-center justify-center">
+                  <h3 className="text-lg font-medium text-center">Preview</h3>
+                  <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border opacity-50">
+                     <Image src={originalImage} alt="Original image preview" width={400} height={400} className="object-contain w-full h-full" />
+                  </CheckeredBackground>
+                  <p className="text-sm text-muted-foreground text-center">Ready to generate.</p>
+                </div>
+              )
             )}
           </div>
         )}
+        
+        <div className="space-y-3 mt-6">
+          {originalImage && !processedImage && !isLoading && !error && (
+            <Button onClick={handleGenerateProcess} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Wand2 className="mr-2 h-4 w-4" />
+              Generate Background
+            </Button>
+          )}
 
-        {!isLoading && (originalImage || processedImage) && (
-          <Button variant="outline" onClick={resetState} className="w-full">
-            Upload Another Image
-          </Button>
-        )}
+          {processedImage && !isLoading && !error && (
+            <Button onClick={handleDownload} className="w-full">
+              <Download className="mr-2 h-4 w-4" /> Download Image
+            </Button>
+          )}
+        
+          {(originalImage || processedImage || error) && !isLoading && (
+            <Button variant="outline" onClick={resetState} className="w-full">
+              Upload Another Image
+            </Button>
+          )}
+        </div>
 
       </CardContent>
     </Card>
   );
 }
-
-    
