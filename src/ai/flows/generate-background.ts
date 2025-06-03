@@ -43,14 +43,14 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     try {
-      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to identify the main subject in the provided image. Once identified, all pixels in the image that are NOT part of this main subject MUST be made fully transparent (alpha value of 0). The output image format MUST be PNG to preserve this alpha channel transparency. Do NOT fill non-subject areas with any color (like white or black); they MUST be transparent. The final image should consist of only the main subject on a fully transparent background. Do not add watermarks or other artifacts.";
-      const combinedPrompt = `${systemInstruction}\n\nUSER REQUEST: ${input.prompt}`;
+      // Simplified prompt focusing on the core request and output format
+      const directPrompt = `${input.prompt}. The main subject should be on a fully transparent background. The output image format MUST be PNG to preserve the alpha channel transparency. Do not add watermarks or other artifacts.`;
 
       const {media, finishReason, unblockedSafetyRatings} = await ai.generate({
         model: 'googleai/gemini-2.0-flash-exp',
         prompt: [
           {media: {url: input.image}},
-          {text: combinedPrompt},
+          {text: directPrompt}, // Use the simplified direct prompt
         ],
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
@@ -75,7 +75,11 @@ const generateNewBackgroundFlow = ai.defineFlow(
 
       if (!media?.url) {
         console.error('AI did not return an image URL. Finish reason:', finishReason, unblockedSafetyRatings);
-        throw new Error('AI did not return an image with a valid URL. Finish reason: ' + finishReason);
+        let errorMessage = 'AI did not return an image with a valid URL. Finish reason: ' + finishReason;
+        if (finishReasonUpper && (finishReasonUpper.includes('SAFETY') || finishReasonUpper.includes('BLOCKED'))) {
+             errorMessage += ' The request may have been blocked by safety filters.';
+        }
+        throw new Error(errorMessage);
       }
 
       return { newImage: media.url };
@@ -85,9 +89,12 @@ const generateNewBackgroundFlow = ai.defineFlow(
       let errorMessage = 'Failed to generate new background using AI.';
       if (error && error.message) {
         errorMessage += ` Details: ${error.message}`;
-        const errorDetailsLower = JSON.stringify(error).toLowerCase();
-         if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked'))) {
-          errorMessage += ' The request may have been blocked by safety filters.';
+        // Ensure the safety filter message is preserved if already present
+        if (!error.message.toLowerCase().includes('safety') && !error.message.toLowerCase().includes('blocked')) {
+            const errorDetailsLower = JSON.stringify(error).toLowerCase();
+            if (errorDetailsLower.includes('safety') || errorDetailsLower.includes('blocked') || (error.code && typeof error.code === 'string' && error.code.toLowerCase().includes('candidate_blocked')) || (error.message && error.message.toUpperCase().includes('FAILED_PRECONDITION'))) {
+            errorMessage += ' The request may have been blocked by safety filters.';
+            }
         }
       } else {
         errorMessage += ' An unknown error occurred during AI processing.'
@@ -96,3 +103,4 @@ const generateNewBackgroundFlow = ai.defineFlow(
     }
   }
 );
+
