@@ -45,7 +45,7 @@ export default function ImageProcessor() {
       try {
         const result = await generateNewBackground({
           image: dataUrl,
-          prompt: "Place the main subject on a solid white background."
+          prompt: "Isolate the main subject and make the background transparent."
         });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });
@@ -99,7 +99,7 @@ export default function ImageProcessor() {
       const link = document.createElement('a');
       link.href = processedImage;
       const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-      link.download = `${nameWithoutExtension}_white_bg.png`;
+      link.download = `${nameWithoutExtension}_transparent_bg.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -122,7 +122,7 @@ export default function ImageProcessor() {
       <CardHeader>
         <CardTitle className="text-center text-2xl font-headline">Upload Your Image</CardTitle>
         <CardDescription className="text-center">
-          Drag &amp; drop an image or click to select a file. The background will be made white.
+          Drag &amp; drop an image or click to select a file. The background will be made transparent.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -178,9 +178,9 @@ export default function ImageProcessor() {
             {processedImage && (
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-center">Processed</h3>
-                <div className="aspect-square w-full rounded-md overflow-hidden border bg-white">
-                  <Image src={processedImage} alt="Processed image with white background" width={400} height={400} className="object-contain w-full h-full" />
-                </div>
+                 <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border">
+                    <Image src={processedImage} alt="Processed image with transparent background" width={400} height={400} className="object-contain w-full h-full" />
+                 </CheckeredBackground>
                 <Button onClick={handleDownload} className="w-full mt-2" disabled={!processedImage}>
                   <Download className="mr-2 h-4 w-4" /> Download Image
                 </Button>

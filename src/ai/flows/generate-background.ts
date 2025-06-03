@@ -43,7 +43,7 @@ const generateNewBackgroundFlow = ai.defineFlow(
   },
   async (input: GenerateNewBackgroundInput) => {
     try {
-      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to isolate the main subject from the provided image and place it on a solid white background. The output MUST be a standard image format (e.g., PNG or JPG). Ensure the background is entirely white and opaque. Do not add watermarks or other artifacts.";
+      const systemInstruction = "SYSTEM COMMAND: You are an expert image editor. Your task is to isolate the main subject from the provided image and make the background **completely transparent**. The output image MUST be a PNG file with a full alpha channel. Do NOT add any color to the background. Do NOT add a white background. The background should be entirely transparent (alpha channel only). Do not add watermarks or other artifacts.";
       const combinedPrompt = `${systemInstruction}\n\nUSER REQUEST: ${input.prompt}`;
 
       const {media, finishReason, unblockedSafetyRatings} = await ai.generate({
@@ -66,7 +66,11 @@ const generateNewBackgroundFlow = ai.defineFlow(
       const finishReasonUpper = finishReason?.toString().toUpperCase();
       if (finishReasonUpper !== 'STOP' && finishReasonUpper !== 'MODEL_COMPLETE' && finishReasonUpper !== 'FINISH_REASON_STOP') {
         console.error('AI generation finished for a non-STOP reason:', finishReason, unblockedSafetyRatings);
-        throw new Error(`AI generation failed. Reason: ${finishReason}.`);
+        let errorMessage = `AI generation failed. Reason: ${finishReason}.`;
+        if (unblockedSafetyRatings && unblockedSafetyRatings.length > 0) {
+          errorMessage += ` Safety ratings: ${JSON.stringify(unblockedSafetyRatings)}`;
+        }
+        throw new Error(errorMessage);
       }
 
       if (!media?.url) {
