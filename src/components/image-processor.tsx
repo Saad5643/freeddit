@@ -39,7 +39,7 @@ export default function ImageProcessor() {
   const { toast } = useToast();
 
   const [selectedBackgroundType, setSelectedBackgroundType] = useState<BackgroundType>('transparent');
-  const [selectedSolidColor, setSelectedSolidColor] = useState<{ name: string, value: string, hex: string } | null>(null);
+  const [selectedSolidColor, setSelectedSolidColor] = useState<{ name: string, value: string, hex: string } | null>(solidColorOptions.find(c => c.value === 'black')!);
 
 
   const handleFileValidation = (file: File): boolean => {
@@ -62,8 +62,8 @@ export default function ImageProcessor() {
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
       setOriginalImage(dataUrl);
-      setProcessedImage(null); // Clear previous processed image
-      setError(null); // Clear previous errors
+      setProcessedImage(null); 
+      setError(null); 
     };
     reader.readAsDataURL(file);
   }, [toast]);
@@ -80,7 +80,6 @@ export default function ImageProcessor() {
     setProcessedImage(null);
 
     let prompt = "";
-    // processedFileNameSuffix is used for download, can be determined in handleDownload
 
     if (selectedBackgroundType === 'transparent') {
       prompt = "Isolate the main subject and make its original background fully transparent. The output image format MUST be PNG to preserve the alpha channel transparency. Do not add any color to the background; it should be clear (alpha zero). Ensure all pixels not belonging to the main subject are transparent.";
@@ -128,13 +127,13 @@ export default function ImageProcessor() {
     }
   };
 
-  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+  const handleDragOverEvent = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
     setDragOver(true);
   };
 
-  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+  const handleDragLeaveEvent = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
     setDragOver(false);
@@ -167,10 +166,6 @@ export default function ImageProcessor() {
     setIsLoading(false);
     setError(null);
     setFileName(null);
-    // Keep selectedBackgroundType and selectedSolidColor or reset them?
-    // For now, let's keep them so user doesn't have to reselect if they just change image.
-    // setSelectedBackgroundType('transparent'); 
-    // setSelectedSolidColor(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -191,8 +186,8 @@ export default function ImageProcessor() {
           onValueChange={(value: string) => {
             const newType = value as BackgroundType;
             setSelectedBackgroundType(newType);
-            if (newType !== 'solid') {
-              setSelectedSolidColor(null); 
+            if (newType !== 'solid' && selectedSolidColor === null) {
+              setSelectedSolidColor(solidColorOptions.find(c => c.value === 'black')!); 
             }
           }}
           className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"
@@ -239,8 +234,8 @@ export default function ImageProcessor() {
           <div
             onClick={handleUploadClick}
             onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOverEvent}
+            onDragLeave={handleDragLeaveEvent}
             className={`flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors
               ${dragOver ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/70 hover:bg-muted/50'}`}
           >
@@ -290,7 +285,6 @@ export default function ImageProcessor() {
                  </CheckeredBackground>
               </div>
             ) : (
-              // Placeholder or message if image uploaded but not processed yet
               originalImage && !isLoading && !error && (
                 <div className="space-y-2 flex flex-col items-center justify-center">
                   <h3 className="text-lg font-medium text-center">Preview</h3>
@@ -305,22 +299,30 @@ export default function ImageProcessor() {
         )}
         
         <div className="space-y-3 mt-6">
-          {originalImage && !processedImage && !isLoading && !error && (
-            <Button onClick={handleGenerateProcess} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Wand2 className="mr-2 h-4 w-4" />
-              Generate Background
+          {(originalImage || processedImage || error) && !isLoading && (
+            <Button variant="outline" onClick={resetState} className="w-full">
+              Upload Another Image
+            </Button>
+          )}
+
+          {originalImage && (
+            <Button 
+              onClick={handleGenerateProcess} 
+              disabled={isLoading}
+              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="mr-2 h-4 w-4" />
+              )}
+              {isLoading ? 'Generating...' : 'Generate'}
             </Button>
           )}
 
           {processedImage && !isLoading && !error && (
             <Button onClick={handleDownload} className="w-full">
               <Download className="mr-2 h-4 w-4" /> Download Image
-            </Button>
-          )}
-        
-          {(originalImage || processedImage || error) && !isLoading && (
-            <Button variant="outline" onClick={resetState} className="w-full">
-              Upload Another Image
             </Button>
           )}
         </div>
