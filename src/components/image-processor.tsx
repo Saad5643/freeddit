@@ -1,17 +1,32 @@
 
 'use client';
 
-import { useState, useRef, useCallback, type DragEvent } from 'react';
+import { useState, useRef, useCallback, type DragEvent, type ChangeEvent } from 'react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useToast } from '@/hooks/use-toast';
-import { UploadCloud, Download, Loader2, Image as ImageIcon, Wand2 } from 'lucide-react';
+import { UploadCloud, Download, Loader2, Wand2 } from 'lucide-react';
 import { generateNewBackground } from '@/ai/flows/generate-background';
 import CheckeredBackground from '@/components/checkered-background';
+
+type BackgroundType = 'transparent' | 'circles' | 'solid';
+
+const solidColorOptions = [
+    { name: 'Red', value: 'red', hex: '#FF0000' },
+    { name: 'Green', value: 'green', hex: '#00FF00' },
+    { name: 'Blue', value: 'blue', hex: '#0000FF' },
+    { name: 'Yellow', value: 'yellow', hex: '#FFFF00' },
+    { name: 'Purple', value: 'purple', hex: '#800080' },
+    { name: 'Orange', value: 'orange', hex: '#FFA500' },
+    { name: 'Black', value: 'black', hex: '#000000' },
+    { name: 'White', value: 'white', hex: '#FFFFFF' },
+    { name: 'Gray', value: 'gray', hex: '#808080' },
+];
 
 export default function ImageProcessor() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
@@ -23,15 +38,24 @@ export default function ImageProcessor() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const [selectedBackgroundType, setSelectedBackgroundType] = useState<BackgroundType>('transparent');
+  const [selectedSolidColor, setSelectedSolidColor] = useState<{ name: string, value: string, hex: string } | null>(null);
+
+
   const handleFileValidation = (file: File): boolean => {
     if (!file.type.startsWith('image/')) {
       toast({ title: "Invalid File", description: "Please upload an image file (e.g., PNG, JPG).", variant: "destructive" });
       return false;
     }
+    // Basic check for file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "File Too Large", description: "Please upload an image smaller than 5MB.", variant: "destructive" });
+        return false;
+    }
     return true;
   };
 
-  const processFile = useCallback((file: File) => {
+  const processFile = useCallback(async (file: File) => {
     if (!handleFileValidation(file)) return;
 
     setFileName(file.name);
@@ -42,11 +66,29 @@ export default function ImageProcessor() {
       setProcessedImage(null);
       setError(null);
       setIsLoading(true);
+
+      let prompt = "";
+      let processedFileNameSuffix = "_processed";
+
+      if (selectedBackgroundType === 'transparent') {
+        prompt = "Isolate the main subject and make the background fully transparent. The output image format MUST be PNG to preserve the alpha channel transparency. Do not add any color to the background; it should be clear.";
+        processedFileNameSuffix = "_transparent_bg";
+      } else if (selectedBackgroundType === 'circles') {
+        prompt = "Isolate the main subject and place it on a new, visually appealing background featuring a pattern of non-overlapping, medium-sized circles in various main colors (like red, blue, green, yellow, purple). Ensure the subject is clearly visible and the background is distinct. The output image format MUST be PNG.";
+        processedFileNameSuffix = "_circles_bg";
+      } else if (selectedBackgroundType === 'solid') {
+        if (selectedSolidColor) {
+          prompt = `Isolate the main subject and place it on a new, solid ${selectedSolidColor.name.toLowerCase()} background. The output image format MUST be PNG.`;
+          processedFileNameSuffix = `_${selectedSolidColor.value}_bg`;
+        } else {
+          toast({ title: "Color Not Selected", description: "Please select a solid background color.", variant: "destructive" });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       try {
-        const result = await generateNewBackground({
-          image: dataUrl,
-          prompt: "Isolate the main subject and make the background transparent."
-        });
+        const result = await generateNewBackground({ image: dataUrl, prompt });
         setProcessedImage(result.newImage);
         toast({ title: "Success!", description: "Background processed successfully." });
       } catch (err: any) {
@@ -59,9 +101,9 @@ export default function ImageProcessor() {
       }
     };
     reader.readAsDataURL(file);
-  }, [toast]);
+  }, [toast, selectedBackgroundType, selectedSolidColor]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       processFile(file);
@@ -99,7 +141,12 @@ export default function ImageProcessor() {
       const link = document.createElement('a');
       link.href = processedImage;
       const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.')) || fileName;
-      link.download = `${nameWithoutExtension}_transparent_bg.png`;
+      let suffix = '_processed';
+      if (selectedBackgroundType === 'transparent') suffix = '_transparent_bg';
+      else if (selectedBackgroundType === 'circles') suffix = '_circles_bg';
+      else if (selectedBackgroundType === 'solid' && selectedSolidColor) suffix = `_${selectedSolidColor.value}_bg`;
+      
+      link.download = `${nameWithoutExtension}${suffix}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -112,6 +159,8 @@ export default function ImageProcessor() {
     setIsLoading(false);
     setError(null);
     setFileName(null);
+    setSelectedBackgroundType('transparent');
+    setSelectedSolidColor(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -122,10 +171,61 @@ export default function ImageProcessor() {
       <CardHeader>
         <CardTitle className="text-center text-2xl font-headline">Upload Your Image</CardTitle>
         <CardDescription className="text-center">
-          Drag &amp; drop an image or click to select a file. The background will be made transparent.
+          Select an image and choose your desired background effect.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        
+        <RadioGroup
+          value={selectedBackgroundType}
+          onValueChange={(value: string) => {
+            const newType = value as BackgroundType;
+            setSelectedBackgroundType(newType);
+            if (newType !== 'solid') {
+              setSelectedSolidColor(null); // Reset solid color if not selected
+            }
+          }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="transparent" id="bg-transparent" />
+            <Label htmlFor="bg-transparent">Transparent</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="circles" id="bg-circles" />
+            <Label htmlFor="bg-circles">Colored Circles</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="solid" id="bg-solid" />
+            <Label htmlFor="bg-solid">Solid Color</Label>
+          </div>
+        </RadioGroup>
+
+        {/* Conditional rendering for solid color options */}
+        {selectedBackgroundType === 'solid' && (
+          <div className="space-y-2 mb-4 p-4 border rounded-md bg-card">
+            <Label htmlFor="solid-color-picker" className="font-medium text-sm text-foreground">Choose Background Color:</Label>
+            <div id="solid-color-picker" className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-2">
+              {solidColorOptions.map((color) => (
+                <Button
+                  key={color.value}
+                  variant={selectedSolidColor?.value === color.value ? "default" : "outline"}
+                  onClick={() => setSelectedSolidColor(color)}
+                  className={`w-full h-10 flex items-center justify-center p-1 border-2 transition-all rounded-md
+                              ${selectedSolidColor?.value === color.value ? 'border-primary ring-2 ring-primary ring-offset-2' : 'border-border hover:border-muted-foreground'}`}
+                  aria-label={`Select ${color.name} background`}
+                >
+                  <div
+                    className="w-5 h-5 rounded-sm border border-black/20"
+                    style={{ backgroundColor: color.hex }}
+                  />
+                   <span className={`ml-2 text-xs ${selectedSolidColor?.value === color.value ? (color.value === 'white' || color.value === 'yellow' ? 'text-black': 'text-primary-foreground' ) : 'text-muted-foreground' }`}>{color.name}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!originalImage && !isLoading && (
           <div
             onClick={handleUploadClick}
@@ -179,7 +279,7 @@ export default function ImageProcessor() {
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-center">Processed</h3>
                  <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border">
-                    <Image src={processedImage} alt="Processed image with transparent background" width={400} height={400} className="object-contain w-full h-full" />
+                    <Image src={processedImage} alt="Processed image" width={400} height={400} className="object-contain w-full h-full" />
                  </CheckeredBackground>
                 <Button onClick={handleDownload} className="w-full mt-2" disabled={!processedImage}>
                   <Download className="mr-2 h-4 w-4" /> Download Image
@@ -199,3 +299,5 @@ export default function ImageProcessor() {
     </Card>
   );
 }
+
+    
