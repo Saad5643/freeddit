@@ -170,9 +170,9 @@ export default function ImageProcessor() {
             {originalImage && (
               <div className="space-y-2">
                 <h3 className="text-lg font-medium text-center">Original</h3>
-                <div className="aspect-square w-full rounded-md overflow-hidden border">
+                <CheckeredBackground className="aspect-square w-full rounded-md overflow-hidden border">
                   <Image src={originalImage} alt="Original image" width={400} height={400} className="object-contain w-full h-full" />
-                </div>
+                </CheckeredBackground>
               </div>
             )}
             {processedImage && (
