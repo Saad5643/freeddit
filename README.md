@@ -29,7 +29,7 @@ Create a `.env.local` file with your own Gemini API key (get one at https://aist
 GEMINI_API_KEY=your_key_here
 ```
 
-Then start the dev server and open http://localhost:9002 (or the port Next.js prints):
+Then start the dev server and open http://localhost:3000:
 
 ```bash
 npm run dev
